@@ -132,7 +132,11 @@ export default function CreatePage() {
 
   const addToStyle = (category: string, value: string) => {
     const newStyle = styleDescription ? `${styleDescription}, ${category}: ${value}` : `${category}: ${value}`
-    setStyleDescription(newStyle)
+    
+    // Check if adding this style would exceed the 150 character limit
+    if (newStyle.length <= 150) {
+      setStyleDescription(newStyle)
+    }
   }
 
   const handleRandom = () => {
@@ -142,7 +146,11 @@ export default function CreatePage() {
     const randomTempo = tempos[Math.floor(Math.random() * tempos.length)]
 
     const randomStyle = `Instrument: ${randomInstrument}, Genre: ${randomGenre}, Mood: ${randomMood}, Tempo: ${randomTempo}`
-    setStyleDescription(randomStyle)
+    
+    // Check if the random style fits within the 150 character limit
+    if (randomStyle.length <= 150) {
+      setStyleDescription(randomStyle)
+    }
   }
 
   const clearStyle = () => {
@@ -294,7 +302,7 @@ export default function CreatePage() {
             {/* Step 1: Story */}
             <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-card-border shadow-lg dark:shadow-white/5 backdrop-blur-sm">
               <CardContent className="p-5">
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <Label htmlFor="story" className="text-base font-semibold flex items-center gap-2">
                     <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                       1
@@ -309,7 +317,7 @@ export default function CreatePage() {
                     placeholder="Once upon a time, I met someone who changed my life forever..."
                     value={story}
                     onChange={(e) => {
-                      if (e.target.value.length <= 3000) {
+                      if (e.target.value.length <= 250) {
                         setStory(e.target.value)
                       }
                     }}
@@ -325,8 +333,8 @@ export default function CreatePage() {
                       Inspired Story
                     </Button>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs ${story.length >= 3000 ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
-                        {story.length}/3000
+                      <span className={`text-xs ${story.length >= 250 ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                        {story.length}/250
                       </span>
                       <Button
                         variant="ghost"
@@ -361,7 +369,7 @@ export default function CreatePage() {
                     placeholder="Describe your song's style, mood, genre, and instruments..."
                     value={styleDescription}
                     onChange={(e) => {
-                      if (e.target.value.length <= 180) {
+                      if (e.target.value.length <= 150) {
                         setStyleDescription(e.target.value)
                       }
                     }}
@@ -390,8 +398,8 @@ export default function CreatePage() {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs ${styleDescription.length >= 180 ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
-                        {styleDescription.length}/180
+                      <span className={`text-xs ${styleDescription.length >= 150 ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
+                        {styleDescription.length}/150
                       </span>
                       <Button
                         variant="ghost"
