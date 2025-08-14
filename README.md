@@ -10,6 +10,17 @@ This is an AI-powered application that transforms your personal stories into bea
 - 🎨 Beautiful, responsive UI
 - 🌙 Dark/Light mode support
 - 📱 Mobile-friendly design
+- 🔌 RESTful API endpoints for integration
+
+## API Endpoints
+
+The application provides several API endpoints for song generation:
+
+- `POST /api/v1/assist-story` - Generate story content from user queries
+- `POST /api/v1/assist-style` - Determine musical style from story content
+- `POST /api/v1/generate-lyrics` - Create lyrics based on story and style
+- `POST /api/v1/generate-song` - Generate audio songs from lyrics and style
+- `GET /api/v1/check-progress` - Check song generation progress
 
 ## Tech Stack
 
@@ -39,6 +50,25 @@ This is an AI-powered application that transforms your personal stories into bea
    ```bash
    pnpm start
    ```
+
+## Testing
+
+### API Testing
+
+Test all API endpoints using the provided test script:
+
+```bash
+node scripts/test-api.js
+```
+
+The test script will:
+- Verify all API endpoints are working
+- Test the complete song generation flow
+- Display detailed responses and error information
+- Ensure your development server is running on port 3000
+
+**Note**: Make sure your development server is running (`pnpm dev`) before executing the test script.
+
 ## License
 
 Private project - All rights reserved.
