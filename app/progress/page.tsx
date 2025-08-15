@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Check, FileText, Music, Sparkles, AlertCircle, Play, Clock } from "lucide-react"
+import { Check, FileText, Music, Sparkles, AlertCircle, Play, Clock, ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { GenerateTask } from "@/lib/types"
 
 const steps = [
   {
@@ -38,42 +39,51 @@ export default function ProgressPage() {
   const [songsInProgress, setSongsInProgress] = useState(0)
   const [finishedSongs, setFinishedSongs] = useState(0)
   const [validationData, setValidationData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const hasStartedRef = useRef(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
 
-  console.log('🔄 Progress page component rendered', { hasStarted: hasStartedRef.current })
 
-  // Get parameters from URL
-  const story = searchParams.get('story')
-  const style = searchParams.get('style')
-  const singingVoice = searchParams.get('singing_voice')
+
+  // Get parameters from localStorage
+  const [generateTask, setGenerateTask] = useState<GenerateTask | null>(null)
 
   useEffect(() => {
-    console.log('🔄 Progress page useEffect triggered', { story: !!story, style: !!style, singingVoice: !!singingVoice, hasStarted: hasStartedRef.current })
+    // Check localStorage for generate task
+    const storedTask = localStorage.getItem('generateTask')
     
-    if (!story || !style || !singingVoice) {
-      setError("Missing required parameters for song generation")
+    if (!storedTask) {
+      setError("No generate task found. Please go back to create page and generate a song.")
       setIsProcessing(false)
+      setIsLoading(false)
       return
     }
 
-    // Set validation data for user to review
-    setValidationData({
-      story: story.trim(),
-      style: style.trim(),
-      singing_voice: singingVoice,
-      storyLength: story.trim().length,
-      styleLength: style.trim().length
-    })
+    try {
+      const task: GenerateTask = JSON.parse(storedTask)
+      setGenerateTask(task)
 
-    console.log('✅ Validation data ready, waiting for user to start process')
-  }, [story, style, singingVoice])
+      // Set validation data for user to review
+      setValidationData({
+        story: task.story,
+        style: task.style,
+        singing_voice: task.voice,
+        storyLength: task.story.length,
+        styleLength: task.style.length
+      })
+      
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Error parsing generate task from localStorage:', error)
+      setError("Invalid generate task data. Please go back to create page and try again.")
+      setIsProcessing(false)
+      setIsLoading(false)
+    }
+  }, [])
 
   const startSongGeneration = async () => {
     if (hasStartedRef.current) {
-      console.log('Song generation already started, skipping')
       return
     }
 
@@ -81,18 +91,15 @@ export default function ProgressPage() {
     setIsProcessing(true)
     setCurrentStep(0)
     setProgress(25)
-    
-    console.log('🚀 User clicked start - beginning song generation process...')
 
     try {
       // Step 1: Generate lyrics from story
-      console.log('🔄 Step 1: Generating lyrics...')
       const lyricsResponse = await fetch('/api/v1/generate-lyrics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: story }),
+        body: JSON.stringify({ query: generateTask!.story }),
       })
 
       if (!lyricsResponse.ok) {
@@ -113,7 +120,6 @@ export default function ProgressPage() {
       // Step 2: Submit song generation task
       setCurrentStep(1)
       
-      console.log('🎵 Step 2: Submitting song generation...')
       const songResponse = await fetch('/api/v1/generate-song', {
         method: 'POST',
         headers: {
@@ -122,8 +128,8 @@ export default function ProgressPage() {
         body: JSON.stringify({
           lyrics,
           title: title || "My AI Generated Song",
-          style,
-          singing_voice: singingVoice
+          style: generateTask!.style,
+          singing_voice: generateTask!.voice
         }),
       })
 
@@ -137,7 +143,6 @@ export default function ProgressPage() {
         throw new Error('No songs returned from generation')
       }
 
-      console.log(`Initial song generation returned ${songData.songs.length} songs:`, songData.songs.map((s: any) => ({ song_id: s.song_id, title: s.title })))
       setSongsInProgress(songData.songs.length)
       setProgress(75)
 
@@ -161,7 +166,6 @@ export default function ProgressPage() {
               if (progressData.status === 'FINISHED') {
                 // Check if we've already processed this song
                 if (processedSongs.has(song.song_id)) {
-                  console.log(`Song ${song.song_id} already processed, skipping`)
                   continue
                 }
                 
@@ -183,15 +187,11 @@ export default function ProgressPage() {
                   
                   localStorage.setItem('generatedSongs', JSON.stringify(updatedSongs))
                   
-                  console.log(`Song ${song.song_id} completed and added to localStorage. Total songs: ${updatedSongs.length}`)
-                  
                   // Show toast notification for completed song
                   toast({
                     title: "Song Complete! 🎵",
                     description: `"${song.title || 'Your song'}" has finished generating`,
                   })
-                } else {
-                  console.log(`Song ${song.song_id} already exists in localStorage, skipping duplicate`)
                 }
               } else {
                 allFinished = false
@@ -234,11 +234,11 @@ export default function ProgressPage() {
           })
           
           if (songsWithoutCurrentDuplicates.length !== finalSongs.length) {
-            console.log(`Cleaned up localStorage: removed ${finalSongs.length - songsWithoutCurrentDuplicates.length} duplicate songs from current generation`)
             localStorage.setItem('generatedSongs', JSON.stringify(songsWithoutCurrentDuplicates))
           }
           
-          console.log(`Final result: ${songsWithoutCurrentDuplicates.length} total songs in localStorage (including previous generations)`)
+          // Remove generate task from localStorage since it's complete
+          localStorage.removeItem('generateTask')
           
           // Wait a moment then redirect to result page
           setTimeout(() => {
@@ -258,7 +258,31 @@ export default function ProgressPage() {
       setError(error instanceof Error ? error.message : 'An error occurred during song generation')
       setIsProcessing(false)
       hasStartedRef.current = false
+      
+      // Remove generate task from localStorage on error
+      localStorage.removeItem('generateTask')
     }
+  }
+
+  // Show loading state while initializing
+  if (isLoading) {
+    return (
+      <div className="flex flex-col">
+        <div className="py-8 flex items-center justify-center">
+          <div className="container mx-auto px-4 max-w-2xl">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-[2px] border-card-border shadow-lg dark:shadow-white/5 backdrop-blur-sm">
+              <CardContent className="p-8 text-center">
+                <div className="flex justify-center mb-6">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+                <h1 className="text-2xl font-bold mb-4">Loading...</h1>
+                <p className="text-muted-foreground">Preparing your song generation task</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (error) {
@@ -271,12 +295,20 @@ export default function ProgressPage() {
                 <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold text-red-600 mb-4">Generation Failed</h1>
                 <p className="text-muted-foreground mb-6">{error}</p>
-                <button
-                  onClick={() => router.push('/create')}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300"
-                >
-                  Try Again
-                </button>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => router.push('/create')}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300"
+                  >
+                    Back to Create
+                  </button>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-secondary hover:bg-secondary/80 text-secondary-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-300"
+                  >
+                    Try Again
+                  </button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -291,6 +323,14 @@ export default function ProgressPage() {
       <div className="flex flex-col">
         <div className="py-8 flex items-center justify-center">
           <div className="container mx-auto px-4 max-w-2xl">
+            {/* Back Button */}
+            <div className="mb-6">
+              <Button variant="ghost" className="flex items-center gap-2" onClick={() => router.push('/create')}>
+                <ArrowLeft className="h-4 w-4" />
+                Back to Create
+              </Button>
+            </div>
+            
             <Card className="bg-gradient-to-br from-card to-card/50 border-[2px] border-card-border shadow-lg dark:shadow-white/5 backdrop-blur-sm">
               <CardContent className="p-8">
                 {/* Header */}
@@ -351,7 +391,7 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Start Button */}
-                <div className="text-center">
+                <div className="text-center space-y-4">
                   <Button
                     onClick={startSongGeneration}
                     size="lg"
@@ -360,9 +400,11 @@ export default function ProgressPage() {
                     <Play className="mr-3 h-5 w-5" />
                     Start Song Generation
                   </Button>
-                  <p className="text-sm text-muted-foreground mt-3">
+                  <p className="text-sm text-muted-foreground">
                     Click to begin the AI song generation process
                   </p>
+                  
+
                 </div>
               </CardContent>
             </Card>
@@ -376,6 +418,14 @@ export default function ProgressPage() {
     <div className="flex flex-col">
       <div className="py-8 flex items-center justify-center">
         <div className="container mx-auto px-4 max-w-2xl">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Button variant="ghost" className="flex items-center gap-2" onClick={() => router.push('/create')}>
+              <ArrowLeft className="h-4 w-4" />
+              Back to Create
+            </Button>
+          </div>
+          
           <Card className="bg-gradient-to-br from-card to-card/50 border-[2px] border-card-border shadow-lg dark:shadow-white/5 backdrop-blur-sm">
             <CardContent className="p-8">
               {/* Header */}
@@ -507,6 +557,8 @@ export default function ProgressPage() {
                   <strong>Please keep this page open</strong> while your song is being generated. Closing the page may interrupt the process.
                 </p>
               </div>
+
+              
 
               {/* Loading Animation */}
               <div className="mt-8 text-center">

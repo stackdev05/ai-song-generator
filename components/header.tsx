@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Sun, Moon, Music } from "lucide-react"
+import { Sun, Moon, Music, Plus, BarChart3 } from "lucide-react"
 import { useTheme } from "next-themes"
 
 export function Header() {
@@ -26,11 +26,36 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <Link href="/create">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0 relative overflow-hidden group"
+              title="Create Song"
+            >
+              <Plus className="h-4 w-4 transition-all group-hover:scale-110" />
+              <span className="sr-only">Create song</span>
+            </Button>
+          </Link>
+          
+          <Link href="/progress">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0 relative overflow-hidden group"
+              title="Progress"
+            >
+              <BarChart3 className="h-4 w-4 transition-all group-hover:scale-110" />
+              <span className="sr-only">View progress</span>
+            </Button>
+          </Link>
+          
           <Link href="/result">
             <Button
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 relative overflow-hidden group"
+              title="Results"
             >
               <Music className="h-4 w-4 transition-all group-hover:scale-110" />
               <span className="sr-only">Go to results</span>

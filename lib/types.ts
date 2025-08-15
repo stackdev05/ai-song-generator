@@ -1,5 +1,14 @@
 // Shared types for AI Song Generator API
 
+// Generate task types for localStorage
+export interface GenerateTask {
+  style: string;
+  story: string;
+  voice: string;
+  timestamp: number;
+  taskId: string;
+}
+
 // Story generation types
 export interface StoryRequest {
   query: string;

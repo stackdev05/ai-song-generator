@@ -162,18 +162,7 @@ export default function CreatePage() {
     const styleValidLength = styleDescription.trim().length <= 150
     const voiceValid = ["random", "male", "female"].includes(selectedVoice)
     
-    // Log validation results
-    console.log("=== Song Generation Validation ===")
-    console.log("Story exists:", storyExists)
-    console.log("Story length valid (≤250):", storyValidLength)
-    console.log("Story length:", story.trim().length)
-    console.log("Style exists:", styleExists)
-    console.log("Style length valid (≤150):", styleValidLength)
-    console.log("Style length:", styleDescription.trim().length)
-    console.log("Voice valid:", voiceValid)
-    console.log("Selected voice:", selectedVoice)
-    console.log("All validations passed:", storyExists && storyValidLength && styleExists && styleValidLength && voiceValid)
-    console.log("================================")
+
     
     // Check if all validations pass and show specific error messages
     if (!storyExists) {
@@ -221,16 +210,22 @@ export default function CreatePage() {
       return
     }
     
-    console.log("✅ All validations passed - ready to generate song")
+
     
-    // Navigate to progress page with parameters
-    const params = new URLSearchParams({
-      story: story.trim(),
+    // Create and save generate task to localStorage
+    const generateTask = {
       style: styleDescription.trim(),
-      singing_voice: selectedVoice
-    })
+      story: story.trim(),
+      voice: selectedVoice,
+      timestamp: Date.now(),
+      taskId: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }
     
-    router.push(`/progress?${params.toString()}`)
+    localStorage.setItem('generateTask', JSON.stringify(generateTask))
+
+    
+    // Navigate to progress page
+    router.push('/progress')
   }
 
   const handleStoryAssist = async () => {
