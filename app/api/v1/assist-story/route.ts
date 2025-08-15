@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
         headers: {
           'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000
       }
     );
 
