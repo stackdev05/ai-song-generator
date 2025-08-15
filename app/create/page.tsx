@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Music, Guitar, Piano, Mic, Heart, Smile, CloudRain, Zap, Coffee, Sun, Moon, Sparkles, Shuffle, Trash2, ChevronDown } from "lucide-react"
-import { PageHeader } from "@/components/page-header"
+import { Music, Guitar, Piano, Mic, Heart, Smile, CloudRain, Zap, Coffee, Sun, Moon, Sparkles, Shuffle, Trash2, ChevronDown, HelpCircle, ArrowLeft } from "lucide-react"
+
+import { useToast } from "@/hooks/use-toast"
 
 // Data for the style options
 const instruments = {
@@ -77,7 +79,10 @@ export default function CreatePage() {
   const [activeTab, setActiveTab] = useState("mood")
   const [selectedVoice, setSelectedVoice] = useState("random")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isGettingStoryAssist, setIsGettingStoryAssist] = useState(false)
+  const [isGettingStyleAssist, setIsGettingStyleAssist] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   // Get random suggestions for each category
   const getRandomSuggestions = (fullList: string[], alwaysShow: string[], count: number = 5) => {
@@ -132,11 +137,7 @@ export default function CreatePage() {
 
   const addToStyle = (category: string, value: string) => {
     const newStyle = styleDescription ? `${styleDescription}, ${category}: ${value}` : `${category}: ${value}`
-    
-    // Check if adding this style would exceed the 150 character limit
-    if (newStyle.length <= 150) {
-      setStyleDescription(newStyle)
-    }
+    setStyleDescription(newStyle)
   }
 
   const handleRandom = () => {
@@ -146,11 +147,7 @@ export default function CreatePage() {
     const randomTempo = tempos[Math.floor(Math.random() * tempos.length)]
 
     const randomStyle = `Instrument: ${randomInstrument}, Genre: ${randomGenre}, Mood: ${randomMood}, Tempo: ${randomTempo}`
-    
-    // Check if the random style fits within the 150 character limit
-    if (randomStyle.length <= 150) {
-      setStyleDescription(randomStyle)
-    }
+    setStyleDescription(randomStyle)
   }
 
   const clearStyle = () => {
@@ -158,19 +155,184 @@ export default function CreatePage() {
   }
 
   const handleGenerate = async () => {
-    if (!story.trim() || !styleDescription.trim() || !selectedVoice) {
+    // Validation
+    const storyExists = story.trim().length > 0
+    const storyValidLength = story.trim().length <= 250
+    const styleExists = styleDescription.trim().length > 0
+    const styleValidLength = styleDescription.trim().length <= 150
+    const voiceValid = ["random", "male", "female"].includes(selectedVoice)
+    
+    // Log validation results
+    console.log("=== Song Generation Validation ===")
+    console.log("Story exists:", storyExists)
+    console.log("Story length valid (≤250):", storyValidLength)
+    console.log("Story length:", story.trim().length)
+    console.log("Style exists:", styleExists)
+    console.log("Style length valid (≤150):", styleValidLength)
+    console.log("Style length:", styleDescription.trim().length)
+    console.log("Voice valid:", voiceValid)
+    console.log("Selected voice:", selectedVoice)
+    console.log("All validations passed:", storyExists && storyValidLength && styleExists && styleValidLength && voiceValid)
+    console.log("================================")
+    
+    // Check if all validations pass and show specific error messages
+    if (!storyExists) {
+      toast({
+        title: "Story Required",
+        description: "Please write a story before generating your song.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!storyValidLength) {
+      toast({
+        title: "Story Too Long",
+        description: "Your story must be 250 characters or less. Current length: " + story.trim().length,
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!styleExists) {
+      toast({
+        title: "Style Required",
+        description: "Please add a style description before generating your song.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!styleValidLength) {
+      toast({
+        title: "Style Too Long",
+        description: "Your style description must be 150 characters or less. Current length: " + styleDescription.trim().length,
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!voiceValid) {
+      toast({
+        title: "Invalid Voice Selection",
+        description: "Please select a valid voice: Random, Male, or Female.",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    console.log("✅ All validations passed - ready to generate song")
+    
+    // Navigate to progress page with parameters
+    const params = new URLSearchParams({
+      story: story.trim(),
+      style: styleDescription.trim(),
+      singing_voice: selectedVoice
+    })
+    
+    router.push(`/progress?${params.toString()}`)
+  }
+
+  const handleStoryAssist = async () => {
+    if (!story.trim()) {
+      toast({
+        title: "Story Required",
+        description: "Please write a brief story first to get AI assistance.",
+        variant: "destructive",
+      })
       return
     }
 
-    setIsGenerating(true)
+    setIsGettingStoryAssist(true)
+    
+    try {
+      const response = await fetch('/api/v1/assist-story', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: story }),
+      })
 
-    // Simulate API call delay
-    setTimeout(() => {
-      router.push("/progress")
-    }, 1000)
+      if (!response.ok) {
+        throw new Error('Failed to get story assistance')
+      }
+
+      const data = await response.json()
+      setStory(data.story)
+      
+      toast({
+        title: "Story Enhanced!",
+        description: "AI has helped enhance your story with creative details.",
+      })
+    } catch (error) {
+      console.error('Error getting story assistance:', error)
+      toast({
+        title: "Error",
+        description: "Failed to get AI assistance. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGettingStoryAssist(false)
+    }
   }
 
-  const isFormValid = story.trim() && styleDescription.trim() && selectedVoice
+  const handleStyleAssist = async () => {
+    if (!styleDescription.trim()) {
+      toast({
+        title: "Style Required",
+        description: "Please add some style content first to get AI assistance.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsGettingStyleAssist(true)
+    
+    try {
+      // If story exists, use it for context; if not, just enhance the existing style
+      const query = story.trim() 
+        ? `Story: ${story}\n\nCurrent Style: ${styleDescription}\n\nPlease enhance or refine the style based on the story context.`
+        : `Current Style: ${styleDescription}\n\nPlease enhance and refine this style description to make it more inspiring and detailed.`
+      
+      const response = await fetch('/api/v1/assist-style', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get style assistance')
+      }
+
+      const data = await response.json()
+      setStyleDescription(data.style)
+      
+      toast({
+        title: "Style Enhanced!",
+        description: story.trim() 
+          ? "AI has enhanced your style description based on your story."
+          : "AI has enhanced your style description to be more inspiring.",
+      })
+    } catch (error) {
+      console.error('Error getting style assistance:', error)
+      toast({
+        title: "Error",
+        description: "Failed to get AI assistance. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGettingStyleAssist(false)
+    }
+  }
+
+  const isFormValid = story.trim().length > 0 && 
+                     story.trim().length <= 250 && 
+                     styleDescription.trim().length > 0 && 
+                     styleDescription.trim().length <= 150 && 
+                     ["random", "male", "female"].includes(selectedVoice)
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -283,10 +445,18 @@ export default function CreatePage() {
 
   return (
     <div className="flex flex-col">
-      <PageHeader />
-
       <div className="py-6">
         <div className="container mx-auto px-4 max-w-3xl">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Link href="/">
+              <Button variant="ghost" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
+
           <div className="text-center mb-6">
             <h1 className="text-2xl md:text-3xl font-playfair font-bold mb-3">
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -316,22 +486,29 @@ export default function CreatePage() {
                     id="story"
                     placeholder="Once upon a time, I met someone who changed my life forever..."
                     value={story}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 250) {
-                        setStory(e.target.value)
-                      }
-                    }}
-                    className="min-h-48 text-sm resize-y border-2 border-card-border focus:border-primary/50 transition-colors"
+                    onChange={(e) => setStory(e.target.value)}
+                    className="min-h-32 text-sm resize-y border-2 border-card-border focus:border-primary/50 transition-colors"
                   />
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Inspired Story
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex items-center gap-2"
+                        onClick={handleStoryAssist}
+                        disabled={isGettingStoryAssist}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        {isGettingStoryAssist ? "Getting AI Help..." : "Inspired Story"}
+                      </Button>
+                      <div className="relative group">
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                          Get AI assistance to enhance your story with creative details and emotional depth
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs ${story.length >= 250 ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
                         {story.length}/250
@@ -368,25 +545,34 @@ export default function CreatePage() {
                   <Textarea
                     placeholder="Describe your song's style, mood, genre, and instruments..."
                     value={styleDescription}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 150) {
-                        setStyleDescription(e.target.value)
-                      }
-                    }}
-                    className="min-h-24 text-sm resize-y border-2 border-card-border focus:border-primary/50 transition-colors"
+                    onChange={(e) => setStyleDescription(e.target.value)}
+                    className="min-h-20 text-sm resize-y border-2 border-card-border focus:border-primary/50 transition-colors"
                   />
 
                   {/* Action Buttons and Style Info */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Inspired Style
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex items-center gap-2"
+                          onClick={handleStyleAssist}
+                          disabled={isGettingStyleAssist}
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {isGettingStyleAssist ? "Getting AI Help..." : "Inspired Style"}
+                        </Button>
+                        <div className="relative group">
+                          <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            Get AI assistance to enhance your existing style description. <br />
+                            Add some style content first, then click for AI enhancement. <br />
+                            Having a story makes the enhancement even better!
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                          </div>
+                        </div>
+                      </div>
                       <Button
                         variant="secondary"
                         size="sm"
@@ -609,12 +795,8 @@ export default function CreatePage() {
             <div className="text-center">
               <Button
                 onClick={handleGenerate}
-                disabled={!isFormValid || isGenerating}
                 size="lg"
-                className={`text-lg px-12 py-6 w-full transition-all duration-300 ${isFormValid
-                    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl"
-                    : "bg-muted/50 text-muted-foreground/70 cursor-not-allowed border-2 border-dashed border-muted-foreground/30"
-                  }`}
+                className="text-lg px-12 py-6 w-full transition-all duration-300 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl"
               >
                 {isGenerating ? (
                   <>
@@ -626,13 +808,11 @@ export default function CreatePage() {
                     <Sparkles className="mr-3 h-5 w-5" />
                     Generate Song
                   </>
-                )}
+                  )}
               </Button>
-              {!isFormValid && (
-                <p className="text-sm text-muted-foreground mt-3 font-medium">
-                  Please complete all steps above to generate your song
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground mt-3 font-medium">
+                Click to generate your song. We'll validate everything and let you know if anything needs to be fixed.
+              </p>
             </div>
           </div>
         </div>

@@ -262,6 +262,35 @@
     }
   }
 
+  /* Enhanced loading animations */
+  .animate-bounce-delayed {
+    animation: bounce 1.5s ease-in-out infinite;
+  }
+
+  .animate-pulse-delayed {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Music note floating animation */
+  .animate-music-float {
+    animation: musicFloat 4s ease-in-out infinite;
+  }
+
+  @keyframes musicFloat {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-8px) rotate(5deg);
+    }
+    50% {
+      transform: translateY(-15px) rotate(0deg);
+    }
+    75% {
+      transform: translateY(-8px) rotate(-5deg);
+    }
+  }
+
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
@@ -278,5 +307,27 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 }
