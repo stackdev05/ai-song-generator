@@ -2,16 +2,10 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, PenTool, Music, Sparkles } from "lucide-react"
-import { ModeToggle } from "@/components/mode-toggle"
 
 export default function HomePage() {
   return (
     <div className="flex flex-col">
-      <header className="w-full py-4 px-4 flex-shrink-0">
-        <div className="container mx-auto flex justify-end">
-          <ModeToggle />
-        </div>
-      </header>
 
       {/* Hero Section - full screen height */}
       <section className="relative overflow-hidden flex-1 flex items-center justify-center">

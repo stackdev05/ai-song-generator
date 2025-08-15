@@ -89,8 +89,8 @@ export function AudioPlayer({ title, artist, duration, audioUrl }: AudioPlayerPr
 
         {/* Volume Control */}
         <div className="flex items-center space-x-3 flex-1 max-w-32 ml-6">
-          <Button variant="ghost" size="sm" onClick={toggleMute} className="p-2">
-            {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          <Button variant="ghost" size="sm" onClick={toggleMute} className="p-2 text-primary">
+            {isMuted || volume === 0 ? <VolumeX className="h-4 w-4 text-primary" /> : <Volume2 className="h-4 w-4 text-primary" />}
           </Button>
           <Slider
             value={[isMuted ? 0 : volume]}

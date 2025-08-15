@@ -2,6 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Header } from "@/components/header"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const inter = Inter({
@@ -77,7 +79,12 @@ export default function RootLayout({
                 style={{ animationDelay: "2s" }}
               />
             </div>
-            <main className="relative z-10 flex-1">{children}</main>
+            
+            {/* Header - appears on every page */}
+            <Header />
+            
+            {/* Main content */}
+            <main className="relative z-10 flex-1 pt-0">{children}</main>
             
             {/* Footer - appears on every page */}
             <footer className="py-4 border-t border-border/50 flex-shrink-0 relative z-10">
@@ -87,6 +94,9 @@ export default function RootLayout({
                 </p>
               </div>
             </footer>
+            
+            {/* Toast notifications */}
+            <Toaster />
           </div>
         </ThemeProvider>
       </body>
