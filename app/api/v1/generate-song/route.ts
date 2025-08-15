@@ -73,8 +73,6 @@ export async function POST(request: NextRequest) {
       throw new Error(response.data.message || 'Song generation failed');
     }
 
-    console.log(response.data);
-
     // Return the songs array from the response
     return NextResponse.json<GenerateSongResponse>({
       songs: response.data.data

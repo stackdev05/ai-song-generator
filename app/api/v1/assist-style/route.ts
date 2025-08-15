@@ -44,7 +44,7 @@ KEYS: C major, G major, D major, A major, E major, B major, F# major, C# major, 
 
 Create a flowing, descriptive style that reads naturally like: "Gentle piano arpeggios intertwine with warm cello tones, evoking a reflective, tender mood—soft, intimate, and quietly hopeful, in a flowing A major."
 
-Keep it under 160 characters and make it sound natural and musical.`;
+Keep it under 150 characters and make it sound natural and musical.`;
 
     // Call OpenAI API
     const response = await axios.post(
@@ -68,7 +68,8 @@ Keep it under 160 characters and make it sound natural and musical.`;
         headers: {
           'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000
       }
     );
 
