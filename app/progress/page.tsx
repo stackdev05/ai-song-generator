@@ -401,7 +401,7 @@ export default function ProgressPage() {
                     Start Song Generation
                   </Button>
                   <p className="text-sm text-muted-foreground">
-                    Click to begin the AI song generation process
+                    Click to begin the Story Chord generation process
                   </p>
                   
 

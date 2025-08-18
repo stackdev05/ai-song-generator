@@ -1,6 +1,6 @@
-# AI Song Generator API Documentation
+# Story Chord API Documentation
 
-This document describes the backend API routes for the AI Song Generator platform built with Next.js.
+This document describes the backend API routes for the Story Chord platform built with Next.js.
 
 ## Base URL
 ```

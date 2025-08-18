@@ -15,13 +15,13 @@ export function Header() {
         <Link href="/home" className="flex items-center gap-3">
           <Image
             src="/logo.jpg"
-            alt="AI2Song Logo"
+            alt="Story Chord Logo"
             width={32}
             height={32}
             className="rounded-full"
           />
           <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            AI2Song
+            Story Chord
           </span>
         </Link>
 

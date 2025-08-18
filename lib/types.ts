@@ -1,4 +1,4 @@
-// Shared types for AI Song Generator API
+// Shared types for Story Chord API
 
 // Generate task types for localStorage
 export interface GenerateTask {
