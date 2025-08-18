@@ -12,7 +12,7 @@ export function Header() {
   return (
     <header className="w-full bg-background/80 backdrop-blur-sm border-b border-border/50 py-3 px-4 sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/home" className="flex items-center gap-3">
           <Image
             src="/logo.jpg"
             alt="AI2Song Logo"

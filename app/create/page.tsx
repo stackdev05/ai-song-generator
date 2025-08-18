@@ -484,7 +484,7 @@ export default function CreatePage() {
         <div className="container mx-auto px-4 max-w-3xl">
           {/* Back Button */}
           <div className="mb-6">
-            <Link href="/">
+            <Link href="/home">
               <Button variant="ghost" className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back to Home

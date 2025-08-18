@@ -9,7 +9,7 @@ import { Music, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { href: "/", label: "Home" },
+  { href: "/home", label: "Home" },
   { href: "/create", label: "Create Song" },
 ]
 
@@ -22,7 +22,7 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
+          <Link href="/home" className="flex items-center space-x-2 group">
             <div className="relative">
               <Music className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-20 blur-sm group-hover:opacity-30 transition-opacity" />
