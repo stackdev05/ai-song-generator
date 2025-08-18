@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Simple API test script for AI Song Generator
- * Run with: node scripts/test-api.js
+ * Simple API test script for Story Chord
+ * Tests all API endpoints with sample data
  */
 
 // Suppress url.parse deprecation warnings from dependencies
@@ -23,7 +23,7 @@ const testData = {
 };
 
 async function testAPI() {
-  console.log('🧪 Testing AI Song Generator API...\n');
+  console.log('🧪 Testing Story Chord API...\n');
 
   try {
     // Test 1: Assist Story API

@@ -1,6 +1,6 @@
-# AI Song Generator
+# Story Chord
 
-This is an AI-powered application that transforms your personal stories into beautiful, personalized songs with custom lyrics and melodies.
+Turn your stories into beautiful music with AI-powered song generation.
 
 ## Features
 

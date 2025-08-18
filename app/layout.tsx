@@ -19,7 +19,7 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "AI Song Generator - Turn Your Story into Music",
+  title: "Story Chord - Turn Your Story into Music",
   description: "Transform your personal stories into beautiful AI-generated songs with custom lyrics and melodies.",
   icons: {
     icon: "/logo.jpg",
@@ -90,7 +90,7 @@ export default function RootLayout({
             <footer className="py-4 border-t border-border/50 flex-shrink-0 relative z-10">
               <div className="container mx-auto px-4 text-center">
                 <p className="text-sm text-muted-foreground">
-                  © {new Date().getFullYear()} AI Song Generator. Made with ❤️ for storytellers everywhere.
+                  © {new Date().getFullYear()} Story Chord. Made with ❤️ for storytellers everywhere.
                 </p>
               </div>
             </footer>
