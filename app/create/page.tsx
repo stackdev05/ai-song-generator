@@ -365,7 +365,7 @@ export default function CreatePage() {
                 <Badge
                   key={instrument}
                   variant="outline"
-                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                     isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                   }`}
                   onClick={() => addToStyle("Instrument", instrument)}
@@ -377,7 +377,7 @@ export default function CreatePage() {
                 <Badge
                   key={instrument}
                   variant="outline"
-                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                     isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                   }`}
                   onClick={() => addToStyle("Instrument", instrument)}
@@ -397,7 +397,7 @@ export default function CreatePage() {
                 <Badge
                   key={genre}
                   variant="outline"
-                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                     isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                   }`}
                   onClick={() => addToStyle("Genre", genre)}
@@ -409,7 +409,7 @@ export default function CreatePage() {
                 <Badge
                   key={genre}
                   variant="outline"
-                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                     isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                   }`}
                   onClick={() => addToStyle("Genre", genre)}
@@ -429,7 +429,7 @@ export default function CreatePage() {
                 <Badge
                   key={mood}
                   variant="outline"
-                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                     isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                   }`}
                   onClick={() => addToStyle("Mood", mood)}
@@ -441,7 +441,7 @@ export default function CreatePage() {
                 <Badge
                   key={mood}
                   variant="outline"
-                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                     isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                   }`}
                   onClick={() => addToStyle("Mood", mood)}
@@ -461,7 +461,7 @@ export default function CreatePage() {
                 <Badge
                   key={tempo}
                   variant="outline"
-                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                     isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                   }`}
                   onClick={() => addToStyle("Tempo", tempo)}
@@ -697,14 +697,14 @@ export default function CreatePage() {
                                 <div className="h-64 overflow-y-auto">
                                   <div className="flex flex-wrap gap-2">
                                     {instruments.fullList.map((instrument) => (
-                                      <Badge
-                                        key={instrument}
-                                        variant="outline"
-                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
-                                          isAddingStyle ? 'opacity-70 pointer-events-none' : ''
-                                        }`}
-                                        onClick={() => addToStyle("Instrument", instrument)}
-                                      >
+                                                      <Badge
+                  key={instrument}
+                  variant="outline"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
+                  onClick={() => addToStyle("Instrument", instrument)}
+                >
                                         {instrument}
                                       </Badge>
                                     ))}
@@ -719,7 +719,7 @@ export default function CreatePage() {
                                       <Badge
                                         key={genre}
                                         variant="outline"
-                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                                           isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                                         }`}
                                         onClick={() => addToStyle("Genre", genre)}
@@ -738,7 +738,7 @@ export default function CreatePage() {
                                       <Badge
                                         key={mood}
                                         variant="outline"
-                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                                           isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                                         }`}
                                         onClick={() => addToStyle("Mood", mood)}
@@ -757,7 +757,7 @@ export default function CreatePage() {
                                       <Badge
                                         key={tempo}
                                         variant="outline"
-                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow ${
                                           isAddingStyle ? 'opacity-70 pointer-events-none' : ''
                                         }`}
                                         onClick={() => addToStyle("Tempo", tempo)}
@@ -811,6 +811,7 @@ export default function CreatePage() {
                   <div className="flex gap-2">
                     <Button
                       variant={selectedVoice === "random" ? "default" : "outline"}
+                      className="shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow"
                       onClick={() => setSelectedVoice("random")}
                     >
                       Random
@@ -818,6 +819,7 @@ export default function CreatePage() {
 
                     <Button
                       variant={selectedVoice === "male" ? "default" : "outline"}
+                      className="shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow"
                       onClick={() => setSelectedVoice("male")}
                     >
                       Male
@@ -825,6 +827,7 @@ export default function CreatePage() {
 
                     <Button
                       variant={selectedVoice === "female" ? "default" : "outline"}
+                      className="shadow-sm dark:shadow-white/10 dark:hover:shadow-white/20 transition-shadow"
                       onClick={() => setSelectedVoice("female")}
                     >
                       Female
