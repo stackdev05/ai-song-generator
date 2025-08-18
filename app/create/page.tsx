@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -81,8 +81,12 @@ export default function CreatePage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGettingStoryAssist, setIsGettingStoryAssist] = useState(false)
   const [isGettingStyleAssist, setIsGettingStyleAssist] = useState(false)
+  const [isAddingStyle, setIsAddingStyle] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  
+  // Add ref to track last click time to prevent rapid multiple clicks on mobile
+  const lastClickTime = useRef<number>(0)
 
   // Get random suggestions for each category
   const getRandomSuggestions = (fullList: string[], alwaysShow: string[], count: number = 5) => {
@@ -136,8 +140,30 @@ export default function CreatePage() {
 
 
   const addToStyle = (category: string, value: string) => {
+    // Prevent rapid multiple clicks on mobile (within 300ms)
+    const now = Date.now()
+    if (now - lastClickTime.current < 500) {
+      return
+    }
+    lastClickTime.current = now
+    
+    // Set loading state to prevent multiple rapid clicks
+    setIsAddingStyle(true)
+    
     const newStyle = styleDescription ? `${styleDescription}, ${category}: ${value}` : `${category}: ${value}`
     setStyleDescription(newStyle)
+    
+    // Show success feedback
+    toast({
+      title: "Style Added",
+      description: `"${category}: ${value}" has been added.`,
+      duration: 1500,
+    })
+    
+    // Reset loading state after a short delay
+    setTimeout(() => {
+      setIsAddingStyle(false)
+    }, 200)
   }
 
   const handleRandom = () => {
@@ -339,7 +365,9 @@ export default function CreatePage() {
                 <Badge
                   key={instrument}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
                   onClick={() => addToStyle("Instrument", instrument)}
                 >
                   {instrument}
@@ -349,7 +377,9 @@ export default function CreatePage() {
                 <Badge
                   key={instrument}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
                   onClick={() => addToStyle("Instrument", instrument)}
                 >
                   {instrument}
@@ -367,7 +397,9 @@ export default function CreatePage() {
                 <Badge
                   key={genre}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
                   onClick={() => addToStyle("Genre", genre)}
                 >
                   {genre}
@@ -377,7 +409,9 @@ export default function CreatePage() {
                 <Badge
                   key={genre}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
                   onClick={() => addToStyle("Genre", genre)}
                 >
                   {genre}
@@ -395,7 +429,9 @@ export default function CreatePage() {
                 <Badge
                   key={mood}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
                   onClick={() => addToStyle("Mood", mood)}
                 >
                   {mood}
@@ -405,7 +441,9 @@ export default function CreatePage() {
                 <Badge
                   key={mood}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
                   onClick={() => addToStyle("Mood", mood)}
                 >
                   {mood}
@@ -423,7 +461,9 @@ export default function CreatePage() {
                 <Badge
                   key={tempo}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                    isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                  }`}
                   onClick={() => addToStyle("Tempo", tempo)}
                 >
                   {tempo}
@@ -660,7 +700,9 @@ export default function CreatePage() {
                                       <Badge
                                         key={instrument}
                                         variant="outline"
-                                        className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                                          isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                                        }`}
                                         onClick={() => addToStyle("Instrument", instrument)}
                                       >
                                         {instrument}
@@ -677,7 +719,9 @@ export default function CreatePage() {
                                       <Badge
                                         key={genre}
                                         variant="outline"
-                                        className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                                          isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                                        }`}
                                         onClick={() => addToStyle("Genre", genre)}
                                       >
                                         {genre}
@@ -694,7 +738,9 @@ export default function CreatePage() {
                                       <Badge
                                         key={mood}
                                         variant="outline"
-                                        className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                                          isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                                        }`}
                                         onClick={() => addToStyle("Mood", mood)}
                                       >
                                         {mood}
@@ -711,7 +757,9 @@ export default function CreatePage() {
                                       <Badge
                                         key={tempo}
                                         variant="outline"
-                                        className="cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3"
+                                        className={`cursor-pointer hover:bg-primary/20 transition-colors text-sm py-2 px-3 touch-manipulation ${
+                                          isAddingStyle ? 'opacity-70 pointer-events-none' : ''
+                                        }`}
                                         onClick={() => addToStyle("Tempo", tempo)}
                                       >
                                         {tempo}
