@@ -205,7 +205,8 @@ Creates a Stripe checkout session for purchasing a generated song. This endpoint
   "title": "Rise Again",
   "price_cents": 999,
   "currency": "usd",
-  "duration_millis": 180160
+  "duration_millis": 180160,
+  "image_url": "https://files.topmediai.com/aimusic/..."
 }
 ```
 
@@ -222,13 +223,19 @@ Creates a Stripe checkout session for purchasing a generated song. This endpoint
 - `price_cents` (required): Price in cents (e.g., 999 = $9.99)
 - `currency` (optional): Currency code (defaults to "usd")
 - `duration_millis` (optional): Song duration in milliseconds for display
+- `image_url` (optional): URL to the song's cover image for display in checkout
 
 **Features:**
 - Secure Stripe-hosted checkout
-- Automatic success/cancel URL handling
+- Direct redirect to song page after successful payment
 - Metadata tracking for song identification
-- Professional product description
+- Professional product description with song images
 - Duration formatting for better UX
+
+**Success Flow:**
+- After successful payment, Stripe redirects directly to `/song/{song_id}?purchased=1&session_id={CHECKOUT_SESSION_ID}`
+- The song page automatically verifies the purchase using the session ID
+- No intermediate API calls required
 
 **Note:** Requires `STRIPE_SECRET_KEY` environment variable. The checkout session includes metadata for tracking the purchased song.
 
@@ -238,11 +245,16 @@ Creates a Stripe checkout session for purchasing a generated song. This endpoint
 
 **Route:** `GET /api/v1/stripe/status?song_id={songId}`
 
-Checks whether a specific song has been purchased by the current user. Uses cookie-based tracking for purchase status.
+Checks whether a specific song has been purchased by the current user. Uses cookie-based tracking for purchase status and can verify Stripe sessions when provided.
 
 **Request:**
 ```
 GET /api/v1/stripe/status?song_id=a0b04f16-8d85-42e3-95f6-1bef6b047cca
+```
+
+**Optional Headers:**
+```
+X-Session-ID: cs_test_... # Stripe checkout session ID for verification
 ```
 
 **Response:**
@@ -257,9 +269,15 @@ GET /api/v1/stripe/status?song_id=a0b04f16-8d85-42e3-95f6-1bef6b047cca
 
 **Features:**
 - Cookie-based purchase tracking
+- Stripe session verification when session ID is provided
 - Real-time status checking
 - No authentication required
 - Lightweight and fast
+
+**Verification Process:**
+1. First checks cookie-based purchases (fastest)
+2. If not found and session ID provided, verifies with Stripe API
+3. Ensures purchase status is accurate and up-to-date
 
 **Note:** Purchase status is stored in an HTTP-only cookie named `purchases` containing an array of purchased song IDs. The cookie is secure and httpOnly for security.
 
@@ -269,34 +287,19 @@ GET /api/v1/stripe/status?song_id=a0b04f16-8d85-42e3-95f6-1bef6b047cca
 
 **Route:** `GET /api/v1/stripe/success?session_id={sessionId}`
 
-Handles successful payment completion from Stripe. Verifies the payment, updates purchase status, and redirects the user to the song page.
+**Status:** ⚠️ **DEPRECATED** - This endpoint has been removed as part of the checkout flow optimization.
 
-**Request:**
-```
-GET /api/v1/stripe/success?session_id=cs_test_...
-```
+**Previous Functionality:**
+- Handled successful payment completion from Stripe
+- Verified payments and updated purchase status
+- Redirected users to song pages
 
-**Response:**
-Redirects to the song page with purchase confirmation.
+**Current Flow:**
+- Stripe now redirects directly to the song page with purchase parameters
+- Purchase verification happens automatically on the song page
+- No intermediate API endpoint required
 
-**Parameters:**
-- `session_id` (required): Stripe checkout session ID from the success redirect
-
-**Features:**
-- Payment verification with Stripe
-- Automatic purchase status update
-- Secure cookie management
-- User-friendly redirects
-- Error handling for failed verifications
-
-**Process Flow:**
-1. Receives success redirect from Stripe
-2. Verifies payment status with Stripe API
-3. Updates local purchase tracking
-4. Redirects to song page with confirmation
-5. Sets secure purchase cookie
-
-**Note:** This endpoint is called automatically by Stripe after successful payment. It handles the webhook-like functionality for completing purchases.
+**Note:** The checkout flow has been streamlined for better performance and reliability in production environments.
 
 ---
 
@@ -309,9 +312,10 @@ Story Chord includes a complete Stripe payment system that allows users to purch
 1. **Song Generation**: User creates a song using the AI generation APIs
 2. **Checkout Initiation**: Frontend calls the checkout API with song details
 3. **Stripe Checkout**: User completes payment on Stripe's secure checkout page
-4. **Success Handling**: Stripe redirects to success endpoint for verification
-5. **Purchase Tracking**: Purchase status is stored in secure cookies
-6. **Access Control**: Frontend checks purchase status to unlock features
+4. **Direct Redirect**: Stripe redirects directly to the song page with purchase parameters
+5. **Automatic Verification**: Song page verifies purchase status using Stripe session ID
+6. **Purchase Tracking**: Purchase status is stored in secure cookies
+7. **Access Control**: Frontend checks purchase status to unlock features
 
 ### Security Features
 - **Stripe Hosted**: All payment processing happens on Stripe's secure servers
@@ -428,7 +432,7 @@ curl /api/v1/check-progress?song_id=6fd29459-a02d-4ed5-af00-4dd9cbde6916
 ```bash
 curl -X POST /api/v1/stripe/checkout \
   -H "Content-Type: application/json" \
-  -d '{"song_id": "6fd29459-a02d-4ed5-af00-4dd9cbde6916", "title": "Rise Again", "price_cents": 999, "currency": "usd"}'
+  -d '{"song_id": "6fd29459-a02d-4ed5-af00-4dd9cbde6916", "title": "Rise Again", "price_cents": 999, "currency": "usd", "image_url": "https://files.topmediai.com/aimusic/..."}'
 ```
 
 7. **Check purchase status:**
@@ -468,7 +472,7 @@ node scripts/test-api.js
 5. Check Progress API → Monitor generation status
 6. Stripe Checkout API → Create payment session
 7. Stripe Status API → Check purchase status
-8. Stripe Success API → Handle payment completion
+8. Song Page Purchase Verification → Automatic verification on redirect
 
 ---
 

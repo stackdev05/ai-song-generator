@@ -116,6 +116,7 @@ export default function SongPage() {
   useEffect(() => {
     const purchasedParam = searchParams.get('purchased')
     const canceledParam = searchParams.get('canceled')
+    const sessionId = searchParams.get('session_id')
     
     if (purchasedParam === '1') {
       setPurchased(true)
@@ -127,6 +128,7 @@ export default function SongPage() {
       // Clean URL
       const url = new URL(window.location.href)
       url.searchParams.delete('purchased')
+      url.searchParams.delete('session_id')
       window.history.replaceState({}, '', url.toString())
     }
     
@@ -142,7 +144,43 @@ export default function SongPage() {
       url.searchParams.delete('canceled')
       window.history.replaceState({}, '', url.toString())
     }
-  }, [searchParams, songId, toast])
+
+    // Handle session_id from Stripe redirect
+    if (sessionId && !purchased) {
+      verifyPurchase(sessionId)
+    }
+  }, [searchParams, songId, toast, purchased])
+
+  // Function to verify purchase with session_id
+  const verifyPurchase = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/v1/stripe/status?song_id=${encodeURIComponent(songId)}`, { 
+        cache: 'no-store',
+        headers: {
+          'X-Session-ID': sessionId
+        }
+      })
+      
+      if (response.ok) {
+        const status = await response.json()
+        if (status.purchased) {
+          setPurchased(true)
+          // Update localStorage record to include purchased flag
+          const existingSongs = JSON.parse(localStorage.getItem('generatedSongs') || '[]')
+          const updated = existingSongs.map((s: any) => s.song_id === songId ? { ...s, purchased: true } : s)
+          localStorage.setItem('generatedSongs', JSON.stringify(updated))
+          
+          toast({
+            title: "Purchase Successful!",
+            description: "Your song has been unlocked! Feel free to listen, download, and share with others.",
+            duration: 5000,
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying purchase:', error)
+    }
+  }
 
   useEffect(() => {
     const audio = audioRef.current
@@ -374,6 +412,7 @@ export default function SongPage() {
           price_cents: parseInt(process.env.NEXT_PUBLIC_SONG_PRICE_CENTS || '299'),
           currency: 'usd',
           duration_millis: songData.audio_duration,
+          image_url: songData.image,
         }),
       })
       if (!response.ok) {
