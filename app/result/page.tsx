@@ -77,6 +77,7 @@ export default function ResultPage() {
           price_cents: parseInt(process.env.NEXT_PUBLIC_SONG_PRICE_CENTS || '299'),
           currency: 'usd',
           duration_millis: song.audio_duration,
+          image_url: song.image,
         }),
       })
       if (!response.ok) {

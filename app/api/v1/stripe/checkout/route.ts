@@ -7,6 +7,7 @@ interface CheckoutRequestBody {
   price_cents: number
   currency?: string
   duration_millis?: number
+  image_url?: string
 }
 
 export async function POST(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe secret key not configured' }, { status: 500 })
     }
 
-    const { song_id, title, price_cents, currency, duration_millis } = body
+    const { song_id, title, price_cents, currency, duration_millis, image_url } = body
 
     if (!song_id || typeof song_id !== 'string') {
       return NextResponse.json({ error: 'song_id is required' }, { status: 400 })
@@ -54,8 +55,8 @@ export async function POST(request: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
-      success_url: `${origin}/api/v1/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/song/${encodeURIComponent(song_id)}?canceled=1`,
+      success_url: `${origin}/song/${encodeURIComponent(song_id)}?purchased=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/song/${song_id}?canceled=1`,
       metadata: {
         song_id,
       },
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
             product_data: {
               name: fullTitle,
               description: `Buy this song to unlock full listening, download MP3 and lyrics, and share with others.`,
+              images: image_url ? [image_url] : [],
             },
           },
         },

@@ -29,7 +29,6 @@ The application provides several API endpoints for song generation and payment p
 ### Payment APIs
 - `POST /api/v1/stripe/checkout` - Create Stripe checkout session for song purchase
 - `GET /api/v1/stripe/status` - Check purchase status for a specific song
-- `GET /api/v1/stripe/success` - Handle successful payment completion
 
 ## Tech Stack
 
@@ -88,8 +87,11 @@ Story Chord includes a complete Stripe payment system:
 1. User generates a song using the AI APIs
 2. User initiates purchase via checkout endpoint
 3. Stripe handles payment processing securely
-4. Purchase status is tracked and stored
-5. User gains access to full song features
+4. **Direct redirect** to song page with automatic purchase verification
+5. Purchase status is tracked and stored
+6. User gains access to full song features
+
+**Note**: The payment flow has been optimized for better performance and reliability in production environments.
 
 ## Testing
 
