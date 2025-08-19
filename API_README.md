@@ -11,6 +11,7 @@ This document describes the backend API routes for the Story Chord platform buil
 All API routes require proper API keys to be configured in environment variables:
 - `OPENAI_API_KEY` - For story, lyrics, and style generation
 - `TOPMEDIA_API_KEY` - For song generation and progress checking
+- `STRIPE_SECRET_KEY` - For payment processing and checkout
 
 ## API Endpoints
 
@@ -191,6 +192,147 @@ GET /api/v1/check-progress?song_id=6fd29459-a02d-4ed5-af00-4dd9cbde6916
 
 ---
 
+### 6. Stripe Checkout API
+
+**Route:** `POST /api/v1/stripe/checkout`
+
+Creates a Stripe checkout session for purchasing a generated song. This endpoint handles payment processing and creates a secure checkout experience.
+
+**Request Body:**
+```json
+{
+  "song_id": "a0b04f16-8d85-42e3-95f6-1bef6b047cca",
+  "title": "Rise Again",
+  "price_cents": 999,
+  "currency": "usd",
+  "duration_millis": 180160
+}
+```
+
+**Response:**
+```json
+{
+  "url": "https://checkout.stripe.com/pay/cs_test_..."
+}
+```
+
+**Parameters:**
+- `song_id` (required): The unique identifier of the song to purchase
+- `title` (optional): Song title for display in checkout
+- `price_cents` (required): Price in cents (e.g., 999 = $9.99)
+- `currency` (optional): Currency code (defaults to "usd")
+- `duration_millis` (optional): Song duration in milliseconds for display
+
+**Features:**
+- Secure Stripe-hosted checkout
+- Automatic success/cancel URL handling
+- Metadata tracking for song identification
+- Professional product description
+- Duration formatting for better UX
+
+**Note:** Requires `STRIPE_SECRET_KEY` environment variable. The checkout session includes metadata for tracking the purchased song.
+
+---
+
+### 7. Stripe Status API
+
+**Route:** `GET /api/v1/stripe/status?song_id={songId}`
+
+Checks whether a specific song has been purchased by the current user. Uses cookie-based tracking for purchase status.
+
+**Request:**
+```
+GET /api/v1/stripe/status?song_id=a0b04f16-8d85-42e3-95f6-1bef6b047cca
+```
+
+**Response:**
+```json
+{
+  "purchased": true
+}
+```
+
+**Parameters:**
+- `song_id` (required): The unique identifier of the song to check
+
+**Features:**
+- Cookie-based purchase tracking
+- Real-time status checking
+- No authentication required
+- Lightweight and fast
+
+**Note:** Purchase status is stored in an HTTP-only cookie named `purchases` containing an array of purchased song IDs. The cookie is secure and httpOnly for security.
+
+---
+
+### 8. Stripe Success API
+
+**Route:** `GET /api/v1/stripe/success?session_id={sessionId}`
+
+Handles successful payment completion from Stripe. Verifies the payment, updates purchase status, and redirects the user to the song page.
+
+**Request:**
+```
+GET /api/v1/stripe/success?session_id=cs_test_...
+```
+
+**Response:**
+Redirects to the song page with purchase confirmation.
+
+**Parameters:**
+- `session_id` (required): Stripe checkout session ID from the success redirect
+
+**Features:**
+- Payment verification with Stripe
+- Automatic purchase status update
+- Secure cookie management
+- User-friendly redirects
+- Error handling for failed verifications
+
+**Process Flow:**
+1. Receives success redirect from Stripe
+2. Verifies payment status with Stripe API
+3. Updates local purchase tracking
+4. Redirects to song page with confirmation
+5. Sets secure purchase cookie
+
+**Note:** This endpoint is called automatically by Stripe after successful payment. It handles the webhook-like functionality for completing purchases.
+
+---
+
+## Payment Integration
+
+### Overview
+Story Chord includes a complete Stripe payment system that allows users to purchase generated songs. The system uses a cookie-based approach for tracking purchases without requiring user accounts.
+
+### Payment Flow
+1. **Song Generation**: User creates a song using the AI generation APIs
+2. **Checkout Initiation**: Frontend calls the checkout API with song details
+3. **Stripe Checkout**: User completes payment on Stripe's secure checkout page
+4. **Success Handling**: Stripe redirects to success endpoint for verification
+5. **Purchase Tracking**: Purchase status is stored in secure cookies
+6. **Access Control**: Frontend checks purchase status to unlock features
+
+### Security Features
+- **Stripe Hosted**: All payment processing happens on Stripe's secure servers
+- **Cookie Security**: Purchase cookies are httpOnly, secure, and sameSite
+- **Metadata Tracking**: Song IDs are embedded in Stripe metadata for verification
+- **Payment Verification**: All purchases are verified with Stripe before completion
+
+### Environment Variables
+```bash
+STRIPE_SECRET_KEY=sk_test_... # Stripe secret key for API access
+NEXT_PUBLIC_APP_URL=http://localhost:3000 # App base URL for redirects
+```
+
+### Testing
+Use Stripe's test mode for development:
+- Test card: 4242 4242 4242 4242
+- Test mode automatically enabled with test keys
+- No real charges processed
+
+---
+
 ## Error Handling
 
 All API endpoints return consistent error responses:
@@ -208,6 +350,11 @@ All API endpoints return consistent error responses:
 - `429`: Rate Limit Exceeded
 - `500`: Internal Server Error
 
+**Payment-Specific Errors:**
+- `500`: Stripe configuration issues
+- `500`: Checkout session creation failures
+- `500`: Payment verification failures
+
 ---
 
 ## Rate Limiting
@@ -215,6 +362,7 @@ All API endpoints return consistent error responses:
 The API includes basic rate limiting to prevent abuse:
 - Default: 100 requests per minute per IP address
 - Configurable via environment variables
+- Payment endpoints may have stricter limits
 
 ---
 
@@ -226,11 +374,13 @@ Create a `.env.local` file with the following variables:
 # Required
 OPENAI_API_KEY=your_openai_api_key_here
 TOPMEDIA_API_KEY=your_topmedia_api_key_here
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
 
 # Optional
 MAX_REQUESTS_PER_MINUTE=100
 MAX_REQUESTS_PER_HOUR=1000
 NODE_ENV=development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ---
@@ -272,6 +422,20 @@ curl -X POST /api/v1/generate-song \
 curl /api/v1/check-progress?song_id=6fd29459-a02d-4ed5-af00-4dd9cbde6916
 ```
 
+### Payment Workflow
+
+6. **Create checkout session:**
+```bash
+curl -X POST /api/v1/stripe/checkout \
+  -H "Content-Type: application/json" \
+  -d '{"song_id": "6fd29459-a02d-4ed5-af00-4dd9cbde6916", "title": "Rise Again", "price_cents": 999, "currency": "usd"}'
+```
+
+7. **Check purchase status:**
+```bash
+curl /api/v1/stripe/status?song_id=6fd29459-a02d-4ed5-af00-4dd9cbde6916
+```
+
 ---
 
 ## Testing
@@ -285,8 +449,8 @@ node scripts/test-api.js
 ```
 
 **What the test script does:**
-- Tests all 5 API endpoints in sequence
-- Follows the complete song generation workflow
+- Tests all 8 API endpoints in sequence
+- Follows the complete song generation and payment workflow
 - Validates request/response formats
 - Displays detailed error information (API errors only)
 - Ensures server connectivity
@@ -302,6 +466,9 @@ node scripts/test-api.js
 3. Assist Style API → Determine musical style
 4. Generate Song API → Start song generation
 5. Check Progress API → Monitor generation status
+6. Stripe Checkout API → Create payment session
+7. Stripe Status API → Check purchase status
+8. Stripe Success API → Handle payment completion
 
 ---
 
@@ -312,12 +479,14 @@ node scripts/test-api.js
 - pnpm (recommended) or npm
 - OpenAI API key
 - TopMediaAI API key
+- Stripe account and API keys
 
 ### Setup
 1. Clone the repository
 2. Install dependencies: `pnpm install`
 3. Copy `env.example` to `.env.local` and fill in your API keys
-4. Run the development server: `pnpm dev`
+4. Configure Stripe webhook endpoints (if needed)
+5. Run the development server: `pnpm dev`
 
 ### Testing
 The API routes can be tested using:
@@ -325,6 +494,7 @@ The API routes can be tested using:
 - Postman or similar API testing tools
 - curl commands
 - Frontend application integration
+- Stripe test mode for payment testing
 
 ---
 
@@ -336,15 +506,19 @@ The API routes can be tested using:
 - **Rate Limiting**: Basic rate limiting implementation
 - **Logging**: Request logging for debugging and monitoring
 - **Scalability**: Designed for easy scaling and feature additions
+- **Payment Security**: Stripe integration with secure cookie management
+- **State Management**: Cookie-based purchase tracking without database dependency
 
 ---
 
 ## Future Enhancements
 
-- Database integration for storing generated songs
-- User authentication and song history
+- Database integration for storing generated songs and purchases
+- User authentication and account management
 - Advanced rate limiting and analytics
-- Webhook support for real-time updates
+- Webhook support for real-time payment updates
 - Batch processing for multiple songs
 - Export options (WAV, FLAC, etc.)
 - Collaboration features
+- Subscription-based pricing models
+- Advanced payment analytics and reporting

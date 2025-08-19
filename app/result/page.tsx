@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Play, Music, Clock, Sparkles, ArrowRight, RotateCcw, ArrowLeft, Loader2 } from "lucide-react"
+import { Play, Music, Clock, Sparkles, ArrowRight, RotateCcw, ArrowLeft, Loader2, ShoppingCart, Check } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 
 interface SongData {
@@ -15,11 +16,13 @@ interface SongData {
   lyric: string
   tags?: string
   audio_duration?: number
+  purchased?: boolean
 }
 
 export default function ResultPage() {
   const [songs, setSongs] = useState<SongData[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [purchasingSong, setPurchasingSong] = useState<string | null>(null)
 
   useEffect(() => {
     const loadSongs = async () => {
@@ -59,6 +62,36 @@ export default function ResultPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
+  const handleBuyNow = async (songId: string) => {
+    try {
+      setPurchasingSong(songId)
+      const song = songs.find(s => s.song_id === songId)
+      if (!song) return
+      
+      const response = await fetch('/api/v1/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          song_id: songId,
+          title: song.title,
+          price_cents: parseInt(process.env.NEXT_PUBLIC_SONG_PRICE_CENTS || '299'),
+          currency: 'usd',
+          duration_millis: song.audio_duration,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to start checkout')
+      }
+      const data = await response.json()
+      if (data?.url) {
+        window.location.href = data.url
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setPurchasingSong(null)
+    }
+  }
 
 
   return (
@@ -128,12 +161,12 @@ export default function ResultPage() {
                           </div>
                         </div>
 
-                                                {/* Always Visible Play Icon */}
+                        {/* Always Visible Play Icon */}
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 bg-white/50 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:bg-white/70 group-hover:shadow-2xl">
                             <Play className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-gray-800/60 ml-1 transition-transform duration-300 group-hover:scale-110 group-hover:text-gray-800" />
-                      </div>
-                    </div>
+                          </div>
+                        </div>
 
                         {/* Record Box Edge Effect */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gray-400 to-gray-600" />
@@ -143,8 +176,34 @@ export default function ResultPage() {
                       </div>
                     </Link>
 
-                    {/* Record Box Shadow/Depth Effect */}
-                    <div className="absolute inset-0 bg-black/20 rounded-lg transform translate-y-2 scale-95 -z-10"></div>
+                    {/* Buy Now Button */}
+                    <div className="mt-1 text-center">
+                      {song.purchased ? (
+                        <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 p-1">
+                          <Check className="h-5 w-5" />
+                          <span className="text-sm font-medium">Purchased</span>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => handleBuyNow(song.song_id)}
+                          size="sm"
+                          disabled={purchasingSong === song.song_id}
+                          className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-lg"
+                        >
+                          {purchasingSong === song.song_id ? (
+                            <>
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingCart className="mr-2 h-3 w-3" />
+                              Buy Now – ${(parseInt(process.env.NEXT_PUBLIC_SONG_PRICE_CENTS || '299') / 100).toFixed(2)}
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
                       ))}

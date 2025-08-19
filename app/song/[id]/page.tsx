@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Slider } from "@/components/ui/slider"
-import { Download, Share2, RotateCcw, Play, Pause, Volume2, VolumeX, Sparkles, ArrowLeft } from "lucide-react"
+import { Download, Share2, RotateCcw, Play, Pause, Volume2, VolumeX, Sparkles, ArrowLeft, HelpCircle, Loader2, ShoppingCart, Check } from "lucide-react"
 import { LyricsPanel } from "@/components/lyrics-panel"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useToast } from "@/hooks/use-toast"
 
 
 interface SongData {
@@ -19,12 +20,15 @@ interface SongData {
   lyric: string
   tags?: string
   audio_duration: number
+  purchased?: boolean
 }
 
 export default function SongPage() {
   const params = useParams()
   const router = useRouter()
   const songId = params.id as string
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
   
 
   const [isPlaying, setIsPlaying] = useState(false)
@@ -37,6 +41,9 @@ export default function SongPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [isPurchasing, setIsPurchasing] = useState(false)
+  const [purchased, setPurchased] = useState(false)
+  const [previewEnded, setPreviewEnded] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -55,13 +62,16 @@ export default function SongPage() {
           const song = songs.find((s: SongData) => s.song_id === songId)
                   if (song) {
           setSongData(song)
+          if (song.purchased) {
+            setPurchased(true)
+          }
           // Set duration from song data (milliseconds)
           if (song.audio_duration) {
             setDuration(song.audio_duration / 1000) // Convert to seconds for display
             setAudioDuration(song.audio_duration) // Keep in milliseconds for seeker
           }
           setIsLoading(false)
-          return
+          // continue to verify purchase status if not already purchased
         }
         }
 
@@ -77,6 +87,20 @@ export default function SongPage() {
         } else {
           throw new Error('Song not found')
         }
+        // verify purchase status from server cookie store
+        try {
+          const statusResp = await fetch(`/api/v1/stripe/status?song_id=${encodeURIComponent(songId)}`, { cache: 'no-store' })
+          if (statusResp.ok) {
+            const status = await statusResp.json()
+            if (status.purchased) {
+              setPurchased(true)
+              // Update localStorage record to include purchased flag
+              const existingSongs = JSON.parse(localStorage.getItem('generatedSongs') || '[]')
+              const updated = existingSongs.map((s: any) => s.song_id === songId ? { ...s, purchased: true } : s)
+              localStorage.setItem('generatedSongs', JSON.stringify(updated))
+            }
+          }
+        } catch (_) {}
       } catch (error) {
         console.error('Error fetching song data:', error)
         setError(error instanceof Error ? error.message : 'Failed to load song')
@@ -87,6 +111,38 @@ export default function SongPage() {
 
     fetchSongData()
   }, [songId])
+
+  // Handle redirect flag from Stripe success
+  useEffect(() => {
+    const purchasedParam = searchParams.get('purchased')
+    const canceledParam = searchParams.get('canceled')
+    
+    if (purchasedParam === '1') {
+      setPurchased(true)
+      if (songId) {
+        const existingSongs = JSON.parse(localStorage.getItem('generatedSongs') || '[]')
+        const updated = existingSongs.map((s: any) => s.song_id === songId ? { ...s, purchased: true } : s)
+        localStorage.setItem('generatedSongs', JSON.stringify(updated))
+      }
+      // Clean URL
+      const url = new URL(window.location.href)
+      url.searchParams.delete('purchased')
+      window.history.replaceState({}, '', url.toString())
+    }
+    
+    if (canceledParam === '1') {
+      toast({
+        variant: "destructive",
+        title: "Checkout Cancelled",
+        description: "Your purchase was cancelled. You can try again anytime!",
+        duration: 4000,
+      })
+      // Clean URL
+      const url = new URL(window.location.href)
+      url.searchParams.delete('canceled')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams, songId, toast])
 
   useEffect(() => {
     const audio = audioRef.current
@@ -173,6 +229,12 @@ export default function SongPage() {
 
   const handlePlayPause = () => {
     if (audioRef.current) {
+      // Check if user is trying to play beyond preview
+      if (!purchased && currentTime >= 20) {
+        setPreviewEnded(true)
+        return
+      }
+
       if (isPlaying) {
         // Clear the update timer when pausing
         if (audioRef.current.dataset.updateTimer) {
@@ -197,6 +259,12 @@ export default function SongPage() {
   const handleSeek = (value: number[]) => {
     // Convert milliseconds to seconds for audio playback
     const seekTimeInSeconds = value[0] / 1000
+    
+    // Prevent seeking beyond preview if not purchased
+    if (!purchased && seekTimeInSeconds > 20) {
+      return
+    }
+    
     setCurrentTime(seekTimeInSeconds)
     
     if (audioRef.current) {
@@ -265,6 +333,10 @@ export default function SongPage() {
   }, [currentTime, duration, volume, isPlaying])
 
   const handleDownload = () => {
+    if (!purchased) {
+      return
+    }
+    
     if (songData?.audio) {
       // Download audio file
       const audioLink = document.createElement('a')
@@ -289,7 +361,40 @@ export default function SongPage() {
     }
   }
 
+  const handleBuyNow = async () => {
+    if (!songData) return
+    try {
+      setIsPurchasing(true)
+      const response = await fetch('/api/v1/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          song_id: songData.song_id,
+          title: songData.title,
+          price_cents: parseInt(process.env.NEXT_PUBLIC_SONG_PRICE_CENTS || '299'),
+          currency: 'usd',
+          duration_millis: songData.audio_duration,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to start checkout')
+      }
+      const data = await response.json()
+      if (data?.url) {
+        window.location.href = data.url
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsPurchasing(false)
+    }
+  }
+
   const handleShare = () => {
+    if (!purchased) {
+      return
+    }
+    
     if (navigator.share) {
       navigator.share({
         title: songData?.title || 'My AI Generated Song',
@@ -308,8 +413,35 @@ export default function SongPage() {
   }
 
   // Calculate progress in milliseconds for precise seeking
-  const progress = audioDuration > 0 ? (currentTime * 1000) : 0
+  const progress = audioDuration > 0 ? (Math.min(currentTime, purchased ? duration : 20) * 1000) : 0
   
+  // Check if current time exceeds preview limit
+  const isPreviewLimitReached = !purchased && currentTime >= 20
+
+  // Handle preview end
+  useEffect(() => {
+    if (!purchased && currentTime >= 20 && isPlaying) {
+      setPreviewEnded(true)
+      if (audioRef.current) {
+        audioRef.current.pause()
+        setIsPlaying(false)
+      }
+      // Show toast notification
+      toast({
+        variant: "destructive",
+        title: "Preview Ended",
+        description: "You've reached the 20-second preview limit. Purchase to continue listening!",
+        duration: 5000,
+      })
+    }
+  }, [currentTime, purchased, isPlaying, toast])
+
+  // Reset preview ended state when purchased
+  useEffect(() => {
+    if (purchased) {
+      setPreviewEnded(false)
+    }
+  }, [purchased])
 
 
   if (isLoading) {
@@ -440,7 +572,14 @@ export default function SongPage() {
                   {/* Song Info and Controls */}
                   <div className="flex-1 min-w-0">
                     <div className="mb-4">
-                      <h2 className="text-3xl text-white font-bold mb-1">{songData.title}</h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-3xl text-white font-bold">{songData.title}</h2>
+                        {purchased ? (
+                          <div className="flex items-center justify-center w-5 h-5 bg-green-500 rounded-full">
+                            <Check className="h-4 w-4 text-white" />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
 
                     {/* Progress Bar */}
@@ -450,13 +589,13 @@ export default function SongPage() {
                         <Slider
                           value={[progress]}
                           onValueChange={handleSeek}
-                          max={audioDuration}
+                          max={purchased ? audioDuration : Math.min(audioDuration, 20000)}
                           step={1}
                           className="flex-1"
                           onValueCommit={() => setIsDragging(false)}
                           onPointerDown={() => setIsDragging(true)}
                         />
-                        <span className="text-xs text-white w-10">{formatTime(duration)}</span>
+                        <span className="text-xs text-white w-10">{formatTime(purchased ? duration : Math.min(duration, 20))}</span>
                       </div>
                     </div>
 
@@ -485,24 +624,66 @@ export default function SongPage() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        onClick={handleDownload}
-                        size="sm"
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 py-1.5 text-xs"
-                      >
-                        <Download className="mr-1.5 h-3 w-3" />
-                        Download
-                      </Button>
-                      <Button
-                        onClick={handleShare}
-                        variant="outline"
-                        size="sm"
-                        className="px-3 py-1.5 text-xs bg-transparent text-white"
-                      >
-                        <Share2 className="mr-1.5 h-3 w-3" />
-                        Share
-                      </Button>
-
+                      {purchased ? (
+                        <Button
+                          onClick={handleDownload}
+                          size="sm"
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 py-1.5 text-xs"
+                        >
+                          <Download className="mr-1.5 h-3 w-3" />
+                          Download
+                        </Button>
+                      ) : null}
+                      {!purchased ? (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={handleBuyNow}
+                            size="sm"
+                            disabled={isPurchasing}
+                            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-1.5 text-xs font-semibold shadow-lg"
+                          >
+                            {isPurchasing ? (<>
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              Processing...
+                            </>) : (<>
+                              <ShoppingCart className="mr-2 h-3 w-3" />
+                              Buy Now – ${parseInt(process.env.NEXT_PUBLIC_SONG_PRICE_CENTS || '299') / 100}
+                            </>)}
+                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-1 h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/20"
+                                >
+                                  <HelpCircle className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>Purchase this song to unlock:</p>
+                                <ul className="mt-1 text-xs space-y-1">
+                                  <li>• Full song playback (unlimited time)</li>
+                                  <li>• Download MP3 and lyrics</li>
+                                  <li>• Share functionality</li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      ) : null}
+                      {purchased ? (
+                        <Button
+                          onClick={handleShare}
+                          variant="outline"
+                          size="sm"
+                          className="px-3 py-1.5 text-xs bg-transparent text-white"
+                        >
+                          <Share2 className="mr-1.5 h-3 w-3" />
+                          Share
+                        </Button>
+                      ) : null}
                     </div>
 
                     {/* Keyboard Shortcuts Help */}
@@ -515,6 +696,11 @@ export default function SongPage() {
                         <span className="bg-white/10 px-2 py-1 rounded">M: Mute</span>
                       </div>
                     </div>
+                    {!purchased && (
+                      <div className="mt-3 text-xs text-white/70">
+                        <p>Preview mode: Limited to first 20 seconds</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -553,6 +739,7 @@ export default function SongPage() {
         preload="metadata"
         crossOrigin="anonymous"
       />
+
     </div>
   )
 }
